@@ -152,11 +152,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           style={{ backgroundColor: "rgba(236, 237, 253, 1)" }}
         >
           <div className="flex items-center justify-between px-6 py-4">
-            <div>
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
-                className="lg:hidden"
+                className="lg:hidden bg-[#3F42EE] text-white p-8"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu size={20} />
