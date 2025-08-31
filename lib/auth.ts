@@ -1,78 +1,82 @@
-import type { NextAuthOptions } from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { api } from "./api"
+import type { AuthOptions } from "next-auth"; // Use AuthOptions instead of NextAuthOptions
+import CredentialsProvider from "next-auth/providers/credentials";
+import axios from "axios";
 
-export const authOptions: NextAuthOptions = {
+const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
+
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
-      name: "credentials",
+      name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.log("[v0] Missing credentials")
-          return null
+          console.log("[Auth] Missing credentials");
+          return null;
         }
 
         try {
-          console.log("[v0] Attempting login with:", credentials.email)
-          const response = await api.post("/auth/login", {
+          const response = await axios.post(`${baseURL}/auth/login`, {
             email: credentials.email,
             password: credentials.password,
-          })
-
-          console.log("[v0] API response:", response.data)
+          });
 
           if (response.data.success) {
-            const { data } = response.data
-            console.log("[v0] Login successful, user data:", data)
+            const { data } = response.data;
+
+            // Ensure the response matches the User interface from types/next-auth.d.ts
             return {
               id: data.userId,
               email: data.email,
               accessToken: data.accessToken,
               refreshToken: data.refreshToken,
-            }
+              role: data.role,
+            };
           }
-          console.log("[v0] Login failed - API returned success: false")
-          return null
-        } catch (error) {
-          console.error("[v0] Authentication error:", error)
-          if (error.response) {
-            console.error("[v0] API Error Response:", error.response.data)
-            console.error("[v0] API Error Status:", error.response.status)
-          } else if (error.request) {
-            console.error("[v0] Network Error - No response received")
-          } else {
-            console.error("[v0] Request setup error:", error.message)
-          }
-          return null
+          console.log("[Auth] Login failed: No success response");
+          return null;
+        } catch (error: any) {
+          console.error("[Auth] Authentication error:", error?.response?.data?.message || error?.message);
+          return null;
         }
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.accessToken = user.accessToken
-        token.refreshToken = user.refreshToken
-        token.userId = user.id
-      }
-      return token
-    },
-    async session({ session, token }) {
-      session.user.id = token.userId as string
-      session.accessToken = token.accessToken as string
-      session.refreshToken = token.refreshToken as string
-      return session
-    },
-  },
-  pages: {
-    signIn: "/auth/login",
-  },
+
   session: {
     strategy: "jwt",
   },
+
+  callbacks: {
+    async jwt({ token, user }) {
+      // User is available during initial sign-in
+      if (user) {
+        token.userId = user.id;
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
+        token.role = user.role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // Populate session.user with custom properties
+      if (session.user) {
+        session.user.id = token.userId ?? "";
+        session.user.role = token.role ?? "";
+        session.accessToken = token.accessToken;
+        session.refreshToken = token.refreshToken;
+      }
+      return session;
+    },
+  },
+
+  pages: {
+    signIn: "/auth/login",
+  },
+
+  secret: process.env.NEXTAUTH_SECRET, // Required for JWT strategy
   debug: process.env.NODE_ENV === "development",
-}
+};

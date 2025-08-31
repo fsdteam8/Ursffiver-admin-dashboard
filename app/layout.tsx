@@ -1,5 +1,4 @@
-import type React from "react"
-import type { Metadata } from "next"
+import { Metadata } from "next"
 import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
@@ -7,6 +6,7 @@ import { Toaster } from "sonner"
 import { Providers } from "./providers"
 import { Suspense } from "react"
 import "./globals.css"
+import { LayoutWrapper } from "@/components/layout-wrapper"
 
 export const metadata: Metadata = {
   title: "SPEET Admin Dashboard",
@@ -24,7 +24,7 @@ export default function RootLayout({
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={null}>
           <Providers>
-            {children}
+            <LayoutWrapper>{children}</LayoutWrapper>
             <Toaster position="top-right" />
           </Providers>
         </Suspense>
