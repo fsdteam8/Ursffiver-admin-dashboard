@@ -145,13 +145,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Header */}
-        <header
-          className="shadow-sm border-b"
-          style={{ backgroundColor: "rgba(236, 237, 253, 1)" }}
-        >
-          <div className="flex items-center justify-between px-6 py-4">
+      <div className="lg:pl-64 ">
+        <header className="lg:hiden">
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -161,33 +156,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               >
                 <Menu size={20} />
               </Button>
-              <div>
-                <h1 className="bg-gradient-to-r from-[#3F42EE] to-[#8A8CF5] bg-clip-text text-transparent text-3xl font-bold">
-                  Dashboard
-                </h1>
-                <p
-                  className="text-[14px] font-normal"
-                  style={{ color: "rgba(53, 53, 73, 1)" }}
-                >
-                  Welcome back! Here's what's happening with your app today.
-                </p>
-              </div>
             </div>
-
-            <div className="flex-1" />
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="relative bg-[#3F42EE] text-white p-2"
-            >
-              <Bell size={20} />
-              Notification
-            </Button>
-          </div>
         </header>
 
-        {/* Page content */}
         <main className="p-6">{children}</main>
       </div>
 
@@ -217,7 +188,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               Are you sure you want to log out?
             </DialogTitle>
             <DialogDescription className="text-gray-500 text-sm mt-2">
-              Logging out will end your current session. You'll need to sign in again to continue.
+              Logging out will end your current session. You'll need to sign in
+              again to continue.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-6 flex justify-between">

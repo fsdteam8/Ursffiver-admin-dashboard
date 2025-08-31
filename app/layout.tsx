@@ -1,6 +1,5 @@
 import { Metadata } from "next"
-import { GeistSans } from "geist/font/sans"
-import { GeistMono } from "geist/font/mono"
+import { Poppins } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "sonner"
 import { Providers } from "./providers"
@@ -14,6 +13,13 @@ export const metadata: Metadata = {
   generator: "v0.app",
 }
 
+// ✅ Import Poppins from Google Fonts
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"], // pick the weights you’ll use
+  variable: "--font-poppins",
+})
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className={`${poppins.variable} font-sans`}>
         <Suspense fallback={null}>
           <Providers>
             <LayoutWrapper>{children}</LayoutWrapper>
