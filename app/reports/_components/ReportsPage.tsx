@@ -6,12 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Search, Eye, Check, Trash2 } from "lucide-react";
 import { reportApi } from "@/lib/api";
 import { Pagination } from "@/components/pagination";
 import { ReportDetailsModal } from "@/components/report-details-modal";
 import Image from "next/image";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // Type for the reportBy object
 interface ReportBy {
@@ -42,6 +56,7 @@ interface NormalizedReport extends Report {
     email: string;
     name: string;
     avatar: string;
+    attachment: string;
   };
 }
 
@@ -112,19 +127,29 @@ const reportApiAdapter: ReportApi = {
 export default function ReportsPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "resolved">("all");
-  const [selectedReport, setSelectedReport] = useState<ModalReport | null>(null);
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "pending" | "resolved"
+  >("all");
+  const [selectedReport, setSelectedReport] = useState<ModalReport | null>(
+    null
+  );
   const [showDetailsModal, setShowDetailsModal] = useState<boolean>(false);
 
   const queryClient = useQueryClient();
 
-  const { data: reportsData, isLoading, isError, error } = useQuery<ReportsApiResponse, ApiError>({
+  const {
+    data: reportsData,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<ReportsApiResponse, ApiError>({
     queryKey: ["reports", currentPage],
     queryFn: () => reportApiAdapter.getReports(currentPage, 20),
   });
 
   const resolveReportMutation = useMutation<void, ApiError, string>({
-    mutationFn: (reportId: string) => reportApiAdapter.updateReportStatus(reportId, "resolved"),
+    mutationFn: (reportId: string) =>
+      reportApiAdapter.updateReportStatus(reportId, "resolved"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reports", currentPage] });
     },
@@ -137,7 +162,10 @@ export default function ReportsPage() {
     },
   });
 
-  const reports = useMemo(() => reportsData?.data?.reports ?? [], [reportsData]);
+  const reports = useMemo(
+    () => reportsData?.data?.reports ?? [],
+    [reportsData]
+  );
   const pagination = reportsData?.data?.pagination;
 
   const normalizedReports = useMemo((): NormalizedReport[] => {
@@ -152,7 +180,9 @@ export default function ReportsPage() {
       reportBy: {
         ...report.reportBy,
         name: report.reportBy.name ?? report.reportBy.email.split("@")[0],
-        avatar: report.reportBy.avatar ?? "/placeholder.svg?height=32&width=32&query=user-avatar",
+        avatar:
+          report.reportBy.avatar ??
+          "/placeholder.svg?height=32&width=32&query=user-avatar",
       },
     }));
   }, [reports]);
@@ -163,7 +193,8 @@ export default function ReportsPage() {
         report.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         report.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
         report.reportBy.email.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === "all" || report.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" || report.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [normalizedReports, searchQuery, statusFilter]);
@@ -200,7 +231,8 @@ export default function ReportsPage() {
   if (isError) {
     return (
       <div className="text-red-600">
-        Error fetching reports: {error?.message ?? "An unexpected error occurred"}
+        Error fetching reports:{" "}
+        {error?.message ?? "An unexpected error occurred"}
       </div>
     );
   }
@@ -211,24 +243,33 @@ export default function ReportsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Reports</h1>
-          <p className="text-gray-600">Manage and resolve user submitted issues</p>
+          <p className="text-gray-600">
+            Manage and resolve user submitted issues
+          </p>
         </div>
       </div>
 
       {/* Search and Filter */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            size={20}
+          />
           <Input
             placeholder="Search"
             value={searchQuery}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setSearchQuery(e.target.value)
+            }
             className="pl-10"
           />
         </div>
         <Select
           value={statusFilter}
-          onValueChange={(value: "all" | "pending" | "resolved") => setStatusFilter(value)}
+          onValueChange={(value: "all" | "pending" | "resolved") =>
+            setStatusFilter(value)
+          }
         >
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Filter by Status" />
@@ -242,121 +283,153 @@ export default function ReportsPage() {
       </div>
 
       <div className="bg-white rounded-lg border">
-        <div className="grid grid-cols-8 gap-4 p-4 border-b bg-gray-50 text-sm font-medium text-gray-700">
-          <div>Reported ID</div>
-          <div>Submitted By</div>
-          <div>Description</div>
-          <div>Problem Type</div>
-          <div>Date</div>
-          <div>Status</div>
-          <div>Attachment</div>
-          <div>Action</div>
-        </div>
-
-        {isLoading
-          ? Array.from({ length: pagination?.pageSize ?? 8 }).map((_, index) => (
-              <div key={index} className="grid grid-cols-8 gap-4 p-4 border-b">
-                <Skeleton className="h-4 w-16" />
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                  <div>
-                    <Skeleton className="h-4 w-24 mb-1" />
-                    <Skeleton className="h-3 w-32" />
-                  </div>
-                </div>
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-4 w-20" />
-                <div className="flex gap-2">
-                  <Skeleton className="h-8 w-8" />
-                  <Skeleton className="h-8 w-8" />
-                  <Skeleton className="h-8 w-8" />
-                </div>
-              </div>
-            ))
-          : filteredReports.map((report) => (
-              <div key={report._id} className="grid grid-cols-8 gap-4 p-4 border-b hover:bg-gray-50">
-                <div className="text-blue-600 font-medium">#{report._id.slice(-4)}</div>
-
-                <div className="flex items-center gap-2">
-                  <Image
-                    src={report.reportBy.avatar}
-                    width={32}
-                    height={32}
-                    alt={report.reportBy.name}
-                    className="w-8 h-8 rounded-full"
-                  />
-                  <div>
-                    <div className="font-medium text-sm">{report.reportBy.name}</div>
-                    <div className="text-xs text-gray-500">{report.reportBy.email}</div>
-                  </div>
-                </div>
-
-                <div className="text-sm text-gray-600 truncate">{report.message}</div>
-
-                <Badge variant="destructive" className="w-fit">
-                  {report.name}
-                </Badge>
-
-                <div className="text-sm text-gray-600">{formatDate(report.createdAt)}</div>
-
-                <Badge
-                  variant={report.status === "resolved" ? "default" : "secondary"}
-                  className={
-                    report.status === "resolved" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                  }
-                >
-                  {report.status === "resolved" ? "Solved" : "Pending"}
-                </Badge>
-
-                <div className="text-sm text-gray-600">
-                  {report.attachment.length ? (
-                    <a
-                      href={report.attachment[0]}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      View Attachment
-                    </a>
-                  ) : (
-                    "No Attachment"
-                  )}
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleViewReport(report)}
-                    aria-label={`View report ${report._id}`}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleResolveReport(report._id)}
-                    disabled={resolveReportMutation.isLoading}
-                    aria-label={`Resolve report ${report._id}`}
-                  >
-                    <Check className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-red-600"
-                    onClick={() => handleDeleteReport(report._id)}
-                    disabled={deleteReportMutation.isLoading}
-                    aria-label={`Delete report ${report._id}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-gray-50">
+              <TableHead>Reported ID</TableHead>
+              <TableHead>Submitted By</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Attachment</TableHead>
+              <TableHead>Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading
+              ? Array.from({ length: pagination?.pageSize ?? 8 }).map(
+                  (_, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                          <div>
+                            <Skeleton className="h-4 w-24 mb-1" />
+                            <Skeleton className="h-3 w-32" />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-6 w-20" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-20" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-6 w-16" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-20" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Skeleton className="h-8 w-8" />
+                          <Skeleton className="h-8 w-8" />
+                          <Skeleton className="h-8 w-8" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                )
+              : filteredReports.map((report) => (
+                  <TableRow key={report._id} className="hover:bg-gray-50">
+                    <TableCell className="text-blue-600 font-medium">
+                      #{report._id.slice(-4)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src={report.reportBy.avatar}
+                          width={32}
+                          height={32}
+                          alt={report.reportBy.name}
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <div>
+                          <div className="font-medium text-sm">
+                            {report.reportBy.name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {report.reportBy.email}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600 truncate">
+                      {report.message}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {formatDate(report.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          report.status === "resolved" ? "default" : "secondary"
+                        }
+                        className={
+                          report.status === "resolved"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }
+                      >
+                        {report.status === "resolved" ? "Solved" : "Pending"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {report.attachment.length ? (
+                        <a
+                          href={report.attachment[0]}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          View Attachment
+                        </a>
+                      ) : (
+                        "No Attachment"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewReport(report)}
+                          aria-label={`View report ${report._id}`}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleResolveReport(report._id)}
+                          disabled={resolveReportMutation.isLoading}
+                          aria-label={`Resolve report ${report._id}`}
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600"
+                          onClick={() => handleDeleteReport(report._id)}
+                          disabled={deleteReportMutation.isLoading}
+                          aria-label={`Delete report ${report._id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Pagination */}
@@ -373,7 +446,11 @@ export default function ReportsPage() {
       )}
 
       {/* Report Details Modal */}
-      <ReportDetailsModal open={showDetailsModal} onOpenChange={setShowDetailsModal} report={selectedReport} />
+      <ReportDetailsModal
+        open={showDetailsModal}
+        onOpenChange={setShowDetailsModal}
+        report={selectedReport}
+      />
     </div>
   );
 }

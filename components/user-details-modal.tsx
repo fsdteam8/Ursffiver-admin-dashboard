@@ -55,9 +55,6 @@ export function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProp
       <DialogContent className="max-w-md mx-auto">
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle className="sr-only">User Details</DialogTitle>
-          <Button variant="ghost" size="sm" onClick={onClose} className="absolute right-4 top-4">
-            <X size={20} />
-          </Button>
         </DialogHeader>
 
         <div className="space-y-6">

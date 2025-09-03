@@ -12,12 +12,51 @@ import {
   AlertTriangle,
   Bell,
 } from "lucide-react";
+import { useState } from "react";
+
+// Dummy data for map markers
+const dummyUsers = [
+  {
+    id: 1,
+    name: "Ursusus",
+    address: "100 Smith Street",
+    location: "Collingwood VIC 3066 AU",
+    top: "40%",
+    left: "25%",
+  },
+  {
+    id: 2,
+    name: "Alex Smith",
+    address: "42 Broadway Ave",
+    location: "New York, USA",
+    top: "50%",
+    left: "50%",
+  },
+  {
+    id: 3,
+    name: "Sophia Lee",
+    address: "10 Queen St",
+    location: "London, UK",
+    top: "65%",
+    left: "35%",
+  },
+  {
+    id: 4,
+    name: "James Wong",
+    address: "Central Plaza",
+    location: "Hong Kong",
+    top: "70%",
+    left: "75%",
+  },
+];
 
 export default function DashboardPage() {
   const { data: usersData, isLoading } = useQuery({
     queryKey: ["users", 1],
     queryFn: () => userApi.getAllUsers(1, 20),
   });
+
+  const [activeUser, setActiveUser] = useState<number | null>(null);
 
   const stats = [
     {
@@ -29,24 +68,24 @@ export default function DashboardPage() {
     },
     {
       title: "Online Users",
-      value: "1,234",
+      value: 1234,
       icon: UserCheck,
       change: "+ 36% from the last month",
       changeType: "positive" as const,
     },
     {
       title: "Active Chats",
-      value: "1,234",
+      value: 1234,
       icon: MessageSquare,
       change: "+ 36% from the last month",
       changeType: "positive" as const,
     },
     {
       title: "Reported Users",
-      value: "1,234",
+      value: 1234,
       icon: AlertTriangle,
       change: "+ 36% from the last month",
-      changeType: "positive" as const,
+      changeType: "negative" as const,
     },
   ];
 
@@ -64,12 +103,11 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-semibold bg-gradient-to-r from-[#3F42EE] to-[#8A8CF5] bg-clip-text text-transparent">
             Dashboard
           </h1>
-
-          <p className="text-[#353549] text-14 font-normal">
+          <p className="text-[#353549] text-sm">
             Welcome back! Here's what's happening with your app today.
           </p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button className="bg-[#3F42EE] hover:bg-[#2c2fd1] rounded-xl text-white px-4">
           <Bell className="mr-2 h-4 w-4" />
           Notification
         </Button>
@@ -77,13 +115,19 @@ export default function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <Card key={stat.title}>
+        {stats.map((stat) => (
+          <Card key={stat.title} className="rounded-xl shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 {stat.title}
               </CardTitle>
-              <stat.icon className="h-5 w-5 text-blue-600" />
+              <stat.icon
+                className={`h-5 w-5 ${
+                  stat.changeType === "negative"
+                    ? "text-red-500"
+                    : "text-blue-600"
+                }`}
+              />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -93,7 +137,15 @@ export default function DashboardPage() {
                   stat.value.toLocaleString()
                 )}
               </div>
-              <p className="text-xs text-green-600 mt-1">{stat.change}</p>
+              <p
+                className={`text-xs mt-1 ${
+                  stat.changeType === "negative"
+                    ? "text-red-600"
+                    : "text-green-600"
+                }`}
+              >
+                {stat.change}
+              </p>
             </CardContent>
           </Card>
         ))}
@@ -101,7 +153,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Live User Map */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 rounded-xl shadow-sm">
           <CardHeader>
             <CardTitle>Live User Map</CardTitle>
             <p className="text-sm text-gray-600">
@@ -110,52 +162,54 @@ export default function DashboardPage() {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="h-80 bg-gray-100 rounded-lg flex items-center justify-center relative overflow-hidden">
-              {/* World Map Placeholder */}
-              <div className="absolute inset-0 opacity-20">
-                <svg viewBox="0 0 1000 500" className="w-full h-full">
-                  <path
-                    d="M150,200 Q200,150 300,180 T500,200 Q600,220 700,200 T900,180"
-                    stroke="#94a3b8"
-                    strokeWidth="1"
-                    fill="none"
-                    strokeDasharray="2,2"
-                  />
-                  <path
-                    d="M100,300 Q200,250 400,280 T700,300 Q800,320 900,300"
-                    stroke="#94a3b8"
-                    strokeWidth="1"
-                    fill="none"
-                    strokeDasharray="2,2"
-                  />
-                </svg>
-              </div>
+            <div className="h-80 bg-gray-100 rounded-lg relative overflow-hidden">
+              <img
+                src="/world-map-light.png"
+                alt="World Map"
+                className="absolute inset-0 w-full h-full object-cover opacity-70"
+              />
 
-              {/* User Markers */}
-              <div className="absolute top-1/3 left-1/4 w-3 h-3 bg-blue-600 rounded-full animate-pulse"></div>
-              <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-purple-600 rounded-full animate-pulse"></div>
-              <div className="absolute top-2/3 right-1/3 w-3 h-3 bg-blue-600 rounded-full animate-pulse"></div>
-              <div className="absolute bottom-1/3 right-1/4 w-3 h-3 bg-purple-600 rounded-full animate-pulse"></div>
+              {/* Markers */}
+              {dummyUsers.map((user) => (
+                <div
+                  key={user.id}
+                  className="absolute w-4 h-4 bg-blue-600 rounded-full animate-pulse cursor-pointer"
+                  style={{ top: user.top, left: user.left }}
+                  onMouseEnter={() => setActiveUser(user.id)}
+                  onMouseLeave={() => setActiveUser(null)}
+                />
+              ))}
 
-              {/* User Info Popup */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full mb-2 bg-white rounded-lg shadow-lg p-3 border">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
-                  <div>
-                    <p className="text-sm font-medium">Ursusus</p>
-                    <p className="text-xs text-gray-500">100 Smith Street</p>
-                    <p className="text-xs text-gray-500">
-                      Collingwood VIC 3066 AU
-                    </p>
-                  </div>
-                </div>
-              </div>
+              {/* Popup */}
+              {dummyUsers.map(
+                (user) =>
+                  activeUser === user.id && (
+                    <div
+                      key={user.id}
+                      className="absolute transform -translate-x-1/2 -translate-y-full mb-2 bg-white rounded-lg shadow-lg p-3 border w-60"
+                      style={{ top: user.top, left: user.left }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+                        <div>
+                          <p className="text-sm font-medium">{user.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {user.address}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {user.location}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+              )}
             </div>
           </CardContent>
         </Card>
 
         {/* Verification Status */}
-        <Card>
+        <Card className="rounded-xl shadow-sm">
           <CardHeader>
             <CardTitle>Verification Status</CardTitle>
             <p className="text-sm text-gray-600">
@@ -168,23 +222,30 @@ export default function DashboardPage() {
               {/* Donut Chart */}
               <div className="flex items-center justify-center">
                 <div className="relative w-32 h-32">
-                  <svg
-                    className="w-32 h-32 transform -rotate-90"
-                    viewBox="0 0 36 36"
-                  >
-                    <path
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  <svg className="w-32 h-32" viewBox="0 0 36 36">
+                    {/* Background circle */}
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15.9155"
                       fill="none"
                       stroke="#e5e7eb"
                       strokeWidth="3"
                     />
-                    <path
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    {/* Verified arc */}
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15.9155"
                       fill="none"
                       stroke="#3b82f6"
                       strokeWidth="3"
-                      strokeDasharray="60, 40"
+                      strokeDasharray={`${
+                        (verifiedUsers / (verifiedUsers + unverifiedUsers)) *
+                        100
+                      }, 100`}
                       strokeLinecap="round"
+                      transform="rotate(-90 18 18)" 
                     />
                   </svg>
                 </div>
@@ -192,19 +253,13 @@ export default function DashboardPage() {
 
               {/* Legend */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-                    <span className="text-sm">Verified: {verifiedUsers}</span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                  <span className="text-sm">Verified: {verifiedUsers}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-                    <span className="text-sm">
-                      Unverified: {unverifiedUsers}
-                    </span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                  <span className="text-sm">Unverified: {unverifiedUsers}</span>
                 </div>
               </div>
             </div>
@@ -221,60 +276,35 @@ export default function DashboardPage() {
                 </Button>
               </div>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
-                    <div>
-                      <p className="text-sm font-medium">Olivia Rhye</p>
-                      <p className="text-xs text-gray-500">
-                        example@example.com
-                      </p>
+                {[1, 2].map((id) => (
+                  <div key={id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+                      <div>
+                        <p className="text-sm font-medium">Olivia Rhye</p>
+                        <p className="text-xs text-gray-500">
+                          example@example.com
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0 text-green-600"
+                      >
+                        ✓
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0 text-red-600"
+                      >
+                        ✕
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0 text-green-600"
-                    >
-                      ✓
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0 text-red-600"
-                    >
-                      ✕
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
-                    <div>
-                      <p className="text-sm font-medium">Olivia Rhye</p>
-                      <p className="text-xs text-gray-500">
-                        example@example.com
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0 text-green-600"
-                    >
-                      ✓
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0 text-red-600"
-                    >
-                      ✕
-                    </Button>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </CardContent>

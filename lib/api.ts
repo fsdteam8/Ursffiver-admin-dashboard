@@ -39,11 +39,10 @@ api.interceptors.response.use(
 export const authApi = {
   login: (email: string, password: string) =>
     api.post("/auth/login", { email, password }),
-  forgotPassword: (email: string) => api.post("/auth/forget", { email }),
-  verifyOtp: (email: string, otp: string) =>
-    api.post("/auth/verify", { email, otp }),
-  resetPassword: (email: string, password: string) =>
-    api.post("/auth/reset-password", { email, password }),
+  forgotPassword: (email: string) =>
+    api.post("/auth/forgot-password", { email }),
+  resetPassword: (email: string, password: string, otp: string) =>
+    api.post("/auth/reset-password", { email, password, otp }),
 };
 
 // User API functions
@@ -55,6 +54,7 @@ export const userApi = {
 
 // Interest API functions
 export const interestApi = {
+  // ... other existing functions ...
   createCategory: (name: string) =>
     api.post("/interest/create-category", { name }),
   getCategories: () => api.get("/interest/categories"),
@@ -67,8 +67,10 @@ export const interestApi = {
     }),
   getInterests: () => api.get("/interest/"),
   updateInterest: (id: string, data: any) =>
-    api.post(`/interest/update-interest/${id}`, data),
-  deleteInterest: (id: string) => api.delete(`/interest/${id}`),
+    api.patch(`/interest/update-interest/${id}`, data),
+  deleteInterest: (id: string) => api.delete(`/interest/delete-interest/${id}`),
+  // Add deleteCategory function
+  deleteCategory: (id: string) => api.delete(`/interest/category/${id}`),
 };
 
 // Badge API functions
