@@ -18,6 +18,8 @@ import {
   Menu,
   X,
   ChartBarStacked,
+  EyeOff,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -45,8 +47,19 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+// 📌 User profile interface
+interface UserProfile {
+  fullName: string;
+  profileImage?: string;
+  role: string;
+}
+
 // 📌 Fetch function for single user (with token)
-const fetchSingleUser = async ({ queryKey }: { queryKey: [string, string, string] }) => {
+const fetchSingleUser = async ({
+  queryKey,
+}: {
+  queryKey: readonly [string, string, string];
+}): Promise<UserProfile> => {
   const [, userId, token] = queryKey;
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/user/single-user/${userId}`,
@@ -70,15 +83,18 @@ const changePassword = async ({
   oldPassword: string;
   newPassword: string;
   token: string;
-}) => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/change-password`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ oldPassword, newPassword }),
-  });
+}): Promise<{ message: string }> => {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/auth/change-password`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ oldPassword, newPassword }),
+    }
+  );
 
   if (!res.ok) {
     const error = await res.json();
@@ -94,7 +110,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
@@ -102,14 +119,23 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const userId = session?.user?.id;
 
   // 📌 Fetch user profile with TanStack Query
-  const { data: userProfile, isLoading } = useQuery({
+  const { data: userProfile, isLoading } = useQuery<
+    UserProfile,
+    Error,
+    UserProfile,
+    readonly [string, string, string]
+  >({
     queryKey: ["singleUser", userId as string, token as string],
     queryFn: fetchSingleUser,
     enabled: !!userId && !!token,
   });
 
   // 📌 Mutation for changing password
-  const mutation = useMutation({
+  const mutation = useMutation<
+    { message: string },
+    Error,
+    { oldPassword: string; newPassword: string; token: string }
+  >({
     mutationFn: changePassword,
     onSuccess: () => {
       toast.success("Password changed successfully!");
@@ -117,7 +143,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       setOldPassword("");
       setNewPassword("");
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message || "Failed to change password");
     },
   });
@@ -167,7 +193,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   href={item.href}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors",
-                    isActive ? "bg-blue-600 text-white" : "text-gray-700 hover:bg-gray-100"
+                    isActive
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-700 hover:bg-gray-100"
                   )}
                   onClick={() => setSidebarOpen(false)}
                 >
@@ -189,7 +217,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </nav>
 
-          {/* ✅ User Profile clickable for Change Password */}
+          {/* User Profile clickable for Change Password */}
           <div
             className="p-4 border-t cursor-pointer hover:bg-gray-100"
             onClick={() => setIsPasswordModalOpen(true)}
@@ -197,7 +225,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="flex items-center gap-3 mb-4">
               <Avatar className="h-10 w-10">
                 {userProfile?.profileImage ? (
-                  <AvatarImage src={userProfile.profileImage} alt={userProfile.fullName} />
+                  <AvatarImage
+                    src={userProfile.profileImage}
+                    alt={userProfile.fullName}
+                  />
                 ) : (
                   <AvatarFallback className="bg-blue-100 text-blue-600">
                     {userProfile?.fullName?.charAt(0).toUpperCase() || "A"}
@@ -206,9 +237,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
-                  {isLoading ? "Loading..." : userProfile?.fullName || "Unknown"}
+                  {isLoading
+                    ? "Loading..."
+                    : userProfile?.fullName || "Unknown"}
                 </p>
-                <p className="text-xs text-gray-500">{userProfile?.role || "User"}</p>
+                <p className="text-xs text-gray-500">
+                  {userProfile?.role || "User"}
+                </p>
               </div>
             </div>
           </div>
@@ -238,11 +273,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               Are you sure you want to log out?
             </DialogTitle>
             <DialogDescription className="text-gray-500 text-sm mt-2">
-              Logging out will end your current session. You'll need to sign in again.
+              Logging out will end your current session. You'll need to sign in
+              again.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-6 flex justify-between">
-            <Button variant="outline" onClick={() => setIsLogoutModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsLogoutModalOpen(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -258,43 +297,83 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </DialogContent>
       </Dialog>
 
-      {/* ✅ Change Password Modal */}
+      {/* Change Password Modal */}
       <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
         <DialogContent className="max-w-md rounded-lg shadow-lg bg-white p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold">Change Password</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">
+              Change Password
+            </DialogTitle>
             <DialogDescription>
               Enter your old and new password to update your account password.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 mt-4">
-            <Input
-              type="password"
-              placeholder="Old Password"
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-            />
-            <Input
-              type="password"
-              placeholder="New Password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
+            {/* Old Password Input */}
+            <div className="relative">
+              <Input
+                type={showOldPassword ? "text" : "password"}
+                placeholder="Old Password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowOldPassword(!showOldPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3"
+              >
+                {showOldPassword ? (
+                  <EyeOff className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <Eye className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
+            </div>
+
+            {/* New Password Input */}
+            <div className="relative">
+              <Input
+                type={showNewPassword ? "text" : "password"}
+                placeholder="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3"
+              >
+                {showNewPassword ? (
+                  <EyeOff className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <Eye className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
+            </div>
           </div>
 
           <DialogFooter className="mt-6 flex justify-between">
-            <Button variant="outline" onClick={() => setIsPasswordModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsPasswordModalOpen(false)}
+            >
               Cancel
             </Button>
             <Button
               className="bg-blue-600 text-white"
-              disabled={mutation.isLoading}
+              disabled={mutation.isPending}
               onClick={() =>
-                mutation.mutate({ oldPassword, newPassword, token: token as string })
+                mutation.mutate({
+                  oldPassword,
+                  newPassword,
+                  token: token as string,
+                })
               }
             >
-              {mutation.isLoading ? "Updating..." : "Update Password"}
+              {mutation.isPending ? "Updating..." : "Update Password"}
             </Button>
           </DialogFooter>
         </DialogContent>
